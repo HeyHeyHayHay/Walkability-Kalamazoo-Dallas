@@ -15,6 +15,7 @@ Shape_AreaIndex = 116
 CSA_NameIndex = 8
 PopIndex = 18
 CountyFPIndex = 4
+StateFPIndex = 3
 
 with open(Walkability_Index, 'r') as csvfile:
     csvreader = csv.reader(csvfile)
@@ -26,7 +27,7 @@ with open(Walkability_Index, 'r') as csvfile:
         CSA_Names.append(row[8])
 
 
-    print("Total number of rows: %d"%(csvreader.line_num))
+    # print("Total number of rows: %d"%(csvreader.line_num))
 
 # Print all the column names
 # print('Field names are:' + ', '.join(field for field in fields))
@@ -35,6 +36,10 @@ with open(Walkability_Index, 'r') as csvfile:
 #print(CSA_Names)
 
 # find the percentage of these which are given State
+
+def reverse(list):
+   new_list = list[::-1]
+   return new_list
 
 def outputListWithStringInString(string, columnIndex):
     listWithString = []
@@ -50,6 +55,13 @@ def findFieldIndex(fieldName):
     for index in range(len(fields)):
         if fieldName in fields[index]:
             return(index)
+
+def concatenatefields(objectID, field1Index, field2Index):
+
+    part1 = rows[int(objectID)-1][int(field1Index)]
+    part2 = rows[int(objectID)-1][int(field2Index)]
+
+    return (part1 + part2)
 
 def objectIDsOfStringInString(string, columnIndex):
     objectIDsWithString = []
@@ -68,6 +80,16 @@ def objectIDsOf(string, columnIndex):
     for row in rows:
             if string == str(row[int(columnIndex)]):
                 objectIDsWithString.append(row[0])
+
+    return objectIDsWithString
+
+def objectIDsOfConcatenate(string, columnIndex1, columnIndex2):
+    objectIDsWithString = []
+    string = str(string)
+
+    for row in rows:
+        if string == str(row[int(columnIndex1)])+str(row[int(columnIndex2)]):
+            objectIDsWithString.append(row[0])
 
     return objectIDsWithString
 
@@ -119,6 +141,9 @@ def averageWalkabilityPerCapita(objectIDs):
     for id in objectIDs:
         totalPop = totalPop + float(rows[int(id)-1][18])
         totalWTimesPop = totalWTimesPop + float(rows[int(id)-1][18])*float(rows[int(id)-1][114])
+
+    if totalPop == 0:
+        return (0)
 
     avgWperPop = totalWTimesPop/totalPop
     return (avgWperPop)
@@ -182,20 +207,93 @@ def findAllValuesForIDs(ids):
 
     return(findings)
 
-countyFPs = fieldListFromObjectIDs(range(len(rows)), 4)
+def allCountyDict():
+    countyDict = {}
+
+    for row in rows:
+        countyGeoID = concatenatefields(row[0], StateFPIndex, CountyFPIndex)
+        objectID = row[0]
+
+        listOfObjectIDs = countyDict.setdefault(countyGeoID, [objectID])
+        listOfObjectIDs.append(objectID)
+
+    return countyDict
+
+counties = allCountyDict()
+
+def evaluateDict(dictionary, function):
+
+    evaluatedDict = {}
+
+    for areaKey in dictionary:
+        objectIDs = dictionary.get(areaKey)
+        eval = function(objectIDs)
+
+        evaluatedDict.setdefault(areaKey, eval)
+
+    return evaluatedDict
+
+def sortDict(dict):
+    sortedList = sorted(dict.items(), key=lambda x:x[1], reverse=True)
+    return sortedList
+
+def findRankOfCounty(countyGeoID, rankedList):
+
+    for pair in rankedList:
+        if countyGeoID == pair[0]:
+            rank = 1 + rankedList.index(pair)
+            return rank
+
+def findValuesRanksForCounty(countyGeoID):
+    counties = allCountyDict()
+
+    averageWalkabilityOfCounties = evaluateDict(counties, averageWalkability)
+    averageWalkabilityPerAreaOfCounties = evaluateDict(counties, averageWalkabilityPerArea)
+    averageWalkabilityPerCapitaOfCounties = evaluateDict(counties, averageWalkabilityPerCapita)
+
+    thisAverageWalkability = averageWalkabilityOfCounties.get(countyGeoID)
+    thisAverageWalkabilityPerArea = averageWalkabilityPerAreaOfCounties.get(countyGeoID)
+    thisAverageWalkabilityPerCapita = averageWalkabilityPerCapitaOfCounties.get(countyGeoID)
+
+    sortWalk = sortDict(averageWalkabilityOfCounties)
+    sortWalkArea = sortDict(averageWalkabilityPerAreaOfCounties)
+    sortWalkCapita = sortDict(averageWalkabilityPerCapitaOfCounties)
+
+    rankWalk = findRankOfCounty(countyGeoID, sortWalk)
+    rankWalkArea = findRankOfCounty(countyGeoID, sortWalkArea)
+    rankWalkCapita = findRankOfCounty(countyGeoID, sortWalkCapita)
+
+    return (countyGeoID, thisAverageWalkability, rankWalk, thisAverageWalkabilityPerArea, rankWalkArea, thisAverageWalkabilityPerCapita, rankWalkCapita)
+
+def listTopBottomNRanks(rankedList, n, top):
+    top = bool(top)
+
+    listOfCountyIDs = []
+    listOfCountyNames = []
+
+    if top == True:
+        for i in range(n):
+            listOfCountyIDs.append(rankedList[i][0])
+    else:
+        rankedList = reverse(rankedList)
+        for i in range(n):
+            listOfCountyIDs.append(rankedList[i][0])
+
+    for countyID in listOfCountyIDs:
+        objectIDs = counties.get(countyID)
+        objectID = objectIDs[0]
+        CSA_Name = rows[int(objectID)][CSA_NameIndex]
+        listOfCountyNames.append(CSA_Name)
+
+    return (listOfCountyNames, listOfCountyIDs)
 
 
+averageWalkabilityOfCounties2 = evaluateDict(counties, averageWalkability)
+averageWalkabilityPerAreaOfCounties2 = evaluateDict(counties, averageWalkabilityPerArea)
+averageWalkabilityPerCapitaOfCounties2 = evaluateDict(counties, averageWalkabilityPerCapita)
+sortWalk2 = sortDict(averageWalkabilityOfCounties2)
+sortWalkArea2 = sortDict(averageWalkabilityPerAreaOfCounties2)
+sortWalkCapita2 = sortDict(averageWalkabilityPerCapitaOfCounties2)
 
-kalamazooCountyIDs = objectIDsOf('77', CountyFPIndex)
-dallasCountyIDs = objectIDsOf('113', CountyFPIndex)
-
-print(fieldListFromObjectIDs(kalamazooCountyIDs, 3))
-print(fieldListFromObjectIDs(dallasCountyIDs, 3))
-
-print('usa', findAllValuesForIDs(range(len(rows))))
-#print('Kalamazoo', findAllValuesForIDs(kalamazooCountyIDs))
-#print('Dallas', findAllValuesForIDs(dallasCountyIDs))
-#print(findAllValuesForCSA_Name('MI'))
-#print(findAllValuesForCSA_Name('TX'))
-#print(findAllValuesForCSA_Name('Kalamazoo'))
-#print(findAllValuesForCSA_Name('Dallas'))
+print(listTopBottomNRanks(sortWalk2, 10, True))
+print(listTopBottomNRanks(sortWalk2, 10, False))
