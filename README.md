@@ -1,7 +1,16 @@
-# Walkability-Kalamazoo-Dallas
+# Walkability Comparison: Kalamazoo vs. Dallas County
 
-I practice data analysis by comparing Walkability in Kalamazoo and Dallas County using python and ArcGis
+**Objective:**  
+I practice data analysis by comparing the **Walkability** between **Kalamazoo** and **Dallas County** using Python and ArcGIS.
 
-Data set used: https://catalog.data.gov/dataset/walkability-index1
+---
 
-The PDF "Comparison of Kalamazoo and Dallas County Walkability" contains some of the findings from working with this data set 
+## Data Set Used:
+[Walkability Index Data Set](https://catalog.data.gov/dataset/walkability-index1)
+
+---
+
+## Findings:  
+The PDF titled **"Comparison of Kalamazoo and Dallas County Walkability"** contains some of the key insights and results from working with this data set.
+
+![Walkability Chart](GraphPopVsWalk.png)
